@@ -45,9 +45,11 @@ void QtDocParser::fillDocumentation(AbstractMetaClass* metaClass)
     }
 
     QString filename = metaClass->qualifiedCppName().toLower().replace("::", "-");
+    // Strip non-generated namespaces like QtMobility from qdoc3 filename.
+    if (context && context->isNamespace() && filename.startsWith(context->name(), Qt::CaseInsensitive) &&
+            !context->typeEntry()->generateCode())
+        filename = filename.remove(0, context->name().size() + 1);
     QString sourceFile = documentationDataDirectory() + '/' + filename + ".xml";
-    if (metaClass->enclosingClass())
-        sourceFile.replace("::", "-");
 
     if (!QFile::exists(sourceFile)) {
         ReportHandler::warning("Can't find qdoc3 file for class "
