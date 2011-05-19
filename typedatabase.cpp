@@ -29,10 +29,41 @@
 #include <QXmlInputSource>
 #include "reporthandler.h"
 
-TypeDatabase::TypeDatabase() : m_suppressWarnings(true), m_apiVersion(0)
+class TypeDatabase::TypeDatabasePrivate
 {
+public:
+    bool suppressWarnings;
+    TypeEntryHash entries;
+    SingleTypeEntryHash flagsEntries;
+    TemplateEntryHash templates;
+    QStringList suppressedWarnings;
+
+    AddedFunctionList globalUserFunctions;
+    FunctionModificationList functionMods;
+
+    QStringList requiredTargetImports;
+
+    QStringList typesystemPaths;
+    QHash<QString, bool> parsedTypesystemFiles;
+
+    QList<TypeRejection> rejections;
+    QStringList rebuildClasses;
+
+    double apiVersion;
+    QStringList dropTypeEntries;
+};
+
+TypeDatabase::TypeDatabase() : m_d(new TypeDatabasePrivate)
+{
+    m_d->suppressWarnings = true;
+    m_d->apiVersion = 0;
     addType(new VoidTypeEntry());
     addType(new VarargsTypeEntry());
+}
+
+TypeDatabase::~TypeDatabase()
+{
+    delete m_d;
 }
 
 TypeDatabase* TypeDatabase::instance(bool newInstance)
@@ -66,13 +97,18 @@ QString TypeDatabase::normalizedSignature(const char* signature)
 
 QStringList TypeDatabase::requiredTargetImports() const
 {
-    return m_requiredTargetImports;
+    return m_d->requiredTargetImports;
 }
 
 void TypeDatabase::addRequiredTargetImport(const QString& moduleName)
 {
-    if (!m_requiredTargetImports.contains(moduleName))
-        m_requiredTargetImports << moduleName;
+    if (!m_d->requiredTargetImports.contains(moduleName))
+        m_d->requiredTargetImports << moduleName;
+}
+
+QStringList TypeDatabase::typesystemPaths() const
+{
+    return m_d->typesystemPaths;
 }
 
 void TypeDatabase::addTypesystemPath(const QString& typesystem_paths)
@@ -82,7 +118,7 @@ void TypeDatabase::addTypesystemPath(const QString& typesystem_paths)
     #else
     char* path_splitter = const_cast<char*>(":");
     #endif
-    m_typesystemPaths += typesystem_paths.split(path_splitter);
+    m_d->typesystemPaths += typesystem_paths.split(path_splitter);
 }
 
 IncludeList TypeDatabase::extraIncludes(const QString& className) const
@@ -119,7 +155,7 @@ FunctionTypeEntry* TypeDatabase::findFunctionType(const QString& name) const
 
 PrimitiveTypeEntry* TypeDatabase::findTargetLangPrimitiveType(const QString& targetLangName) const
 {
-    foreach (QList<TypeEntry*> entries, m_entries.values()) {
+    foreach (QList<TypeEntry*> entries, m_d->entries.values()) {
         foreach (TypeEntry* e, entries) {
             if (e && e->isPrimitive()) {
                 PrimitiveTypeEntry *pe = static_cast<PrimitiveTypeEntry*>(e);
@@ -142,6 +178,16 @@ TypeEntry* TypeDatabase::findType(const QString& name) const
         }
     }
     return 0;
+}
+
+QList<TypeEntry*> TypeDatabase::findTypes(const QString& name) const
+{
+    return m_d->entries.value(name);
+}
+
+TypeEntryHash TypeDatabase::allEntries() const
+{
+    return m_d->entries;
 }
 
 SingleTypeEntryHash TypeDatabase::entries() const
@@ -191,15 +237,15 @@ void TypeDatabase::addRejection(const QString& className, const QString& functio
     r.field_name = fieldName;
     r.enum_name = enumName;
 
-    m_rejections << r;
+    m_d->rejections << r;
 }
 
 bool TypeDatabase::isClassRejected(const QString& className) const
 {
-    if (!m_rebuildClasses.isEmpty())
-        return !m_rebuildClasses.contains(className);
+    if (!m_d->rebuildClasses.isEmpty())
+        return !m_d->rebuildClasses.contains(className);
 
-    foreach (const TypeRejection& r, m_rejections)
+    foreach (const TypeRejection& r, m_d->rejections)
     if (r.class_name == className && r.function_name == "*" && r.field_name == "*" && r.enum_name == "*")
         return true;
 
@@ -208,7 +254,7 @@ bool TypeDatabase::isClassRejected(const QString& className) const
 
 bool TypeDatabase::isEnumRejected(const QString& className, const QString& enumName) const
 {
-    foreach (const TypeRejection& r, m_rejections) {
+    foreach (const TypeRejection& r, m_d->rejections) {
         if (r.enum_name == enumName
             && (r.class_name == className || r.class_name == "*")) {
             return true;
@@ -220,7 +266,7 @@ bool TypeDatabase::isEnumRejected(const QString& className, const QString& enumN
 
 bool TypeDatabase::isFunctionRejected(const QString& className, const QString& functionName) const
 {
-    foreach (const TypeRejection& r, m_rejections)
+    foreach (const TypeRejection& r, m_d->rejections)
     if (r.function_name == functionName &&
         (r.class_name == className || r.class_name == "*"))
         return true;
@@ -230,23 +276,87 @@ bool TypeDatabase::isFunctionRejected(const QString& className, const QString& f
 
 bool TypeDatabase::isFieldRejected(const QString& className, const QString& fieldName) const
 {
-    foreach (const TypeRejection& r, m_rejections)
+    foreach (const TypeRejection& r, m_d->rejections)
     if (r.field_name == fieldName &&
         (r.class_name == className || r.class_name == "*"))
         return true;
     return false;
 }
 
+void TypeDatabase::addType(TypeEntry* e)
+{
+    m_d->entries[e->qualifiedCppName()].append(e);
+}
+
+SingleTypeEntryHash TypeDatabase::flagsEntries() const
+{
+    return m_d->flagsEntries;
+}
+
+TemplateEntry* TypeDatabase::findTemplate(const QString& name) const
+{
+    return m_d->templates[name];
+}
+
+void TypeDatabase::addTemplate(TemplateEntry* t)
+{
+    m_d->templates[t->name()] = t;
+}
+
+AddedFunctionList TypeDatabase::globalUserFunctions() const
+{
+    return m_d->globalUserFunctions;
+}
+
+void TypeDatabase::addGlobalUserFunctions(const AddedFunctionList& functions)
+{
+    m_d->globalUserFunctions << functions;
+}
+
+void TypeDatabase::addGlobalUserFunctionModifications(const FunctionModificationList& functionModifications)
+{
+    m_d->functionMods << functionModifications;
+}
+
+void TypeDatabase::addGlobalUserFunctionModification(const FunctionModification& functionModification)
+{
+    m_d->functionMods << functionModification;
+}
+void TypeDatabase::setSuppressWarnings(bool value)
+{
+    m_d->suppressWarnings = value;
+}
+
+void TypeDatabase::addSuppressedWarning(const QString& s)
+{
+    m_d->suppressedWarnings.append(s);
+}
+
+void TypeDatabase::setRebuildClasses(const QStringList& cls)
+{
+    m_d->rebuildClasses = cls;
+}
+
+QString TypeDatabase::filename() const
+{
+    return "typesystem.txt";
+}
+
+void TypeDatabase::addFlagsType(FlagsTypeEntry* fte)
+{
+    m_d->flagsEntries[fte->originalName()] = fte;
+}
+
 FlagsTypeEntry* TypeDatabase::findFlagsType(const QString &name) const
 {
     FlagsTypeEntry* fte = (FlagsTypeEntry*) findType(name);
     if (!fte) {
-        fte = (FlagsTypeEntry*) m_flagsEntries.value(name);
+        fte = (FlagsTypeEntry*) m_d->flagsEntries.value(name);
         if (!fte) {
             //last hope, search for flag without scope  inside of flags hash
-            foreach(QString key, m_flagsEntries.keys()) {
+            foreach(QString key, m_d->flagsEntries.keys()) {
                 if (key.endsWith(name)) {
-                    fte = (FlagsTypeEntry*) m_flagsEntries.value(key);
+                    fte = (FlagsTypeEntry*) m_d->flagsEntries.value(key);
                     break;
                 }
             }
@@ -258,7 +368,7 @@ FlagsTypeEntry* TypeDatabase::findFlagsType(const QString &name) const
 AddedFunctionList TypeDatabase::findGlobalUserFunctions(const QString& name) const
 {
     AddedFunctionList addedFunctions;
-    foreach (AddedFunction func, m_globalUserFunctions) {
+    foreach (AddedFunction func, m_d->globalUserFunctions) {
         if (func.name() == name)
             addedFunctions.append(func);
     }
@@ -274,8 +384,8 @@ QString TypeDatabase::globalNamespaceClassName(const TypeEntry * /*entry*/)
 FunctionModificationList TypeDatabase::functionModifications(const QString& signature) const
 {
     FunctionModificationList lst;
-    for (int i = 0; i < m_functionMods.count(); ++i) {
-        const FunctionModification& mod = m_functionMods.at(i);
+    for (int i = 0; i < m_d->functionMods.count(); ++i) {
+        const FunctionModification& mod = m_d->functionMods.at(i);
         if (mod.signature == signature)
             lst << mod;
     }
@@ -285,10 +395,10 @@ FunctionModificationList TypeDatabase::functionModifications(const QString& sign
 
 bool TypeDatabase::isSuppressedWarning(const QString& s) const
 {
-    if (!m_suppressWarnings)
+    if (!m_d->suppressWarnings)
         return false;
 
-    foreach (const QString &_warning, m_suppressedWarnings) {
+    foreach (const QString &_warning, m_d->suppressedWarnings) {
         QString warning(QString(_warning).replace("\\*", "&place_holder_for_asterisk;"));
 
         QStringList segs = warning.split("*", QString::SkipEmptyParts);
@@ -313,7 +423,7 @@ QString TypeDatabase::modifiedTypesystemFilepath(const QString& tsFile) const
     if (!QFile::exists(tsFile)) {
         int idx = tsFile.lastIndexOf('/');
         QString fileName = idx >= 0 ? tsFile.right(tsFile.length() - idx - 1) : tsFile;
-        foreach (const QString &path, m_typesystemPaths) {
+        foreach (const QString &path, m_d->typesystemPaths) {
             QString filepath(path + '/' + fileName);
             if (QFile::exists(filepath))
                 return filepath;
@@ -325,19 +435,19 @@ QString TypeDatabase::modifiedTypesystemFilepath(const QString& tsFile) const
 bool TypeDatabase::parseFile(const QString &filename, bool generate)
 {
     QString filepath = modifiedTypesystemFilepath(filename);
-    if (m_parsedTypesystemFiles.contains(filepath))
-        return m_parsedTypesystemFiles[filepath];
+    if (m_d->parsedTypesystemFiles.contains(filepath))
+        return m_d->parsedTypesystemFiles[filepath];
 
     QFile file(filepath);
     if (!file.exists()) {
-        ReportHandler::warning("Can't find " + filename+", typesystem paths: "+m_typesystemPaths.join(", "));
+        ReportHandler::warning("Can't find " + filename+", typesystem paths: "+m_d->typesystemPaths.join(", "));
         return false;
     }
 
-    int count = m_entries.size();
+    int count = m_d->entries.size();
     bool ok = parseFile(&file, generate);
-    m_parsedTypesystemFiles[filepath] = ok;
-    int newCount = m_entries.size();
+    m_d->parsedTypesystemFiles[filepath] = ok;
+    int newCount = m_d->entries.size();
 
     ReportHandler::debugSparse(QString::fromLatin1("Parsed: '%1', %2 new entries")
     .arg(filename)
@@ -396,19 +506,39 @@ NamespaceTypeEntry* TypeDatabase::findNamespaceType(const QString& name) const
         return 0;
 }
 
+double TypeDatabase::apiVersion() const
+{
+    return m_d->apiVersion;
+}
+
+void TypeDatabase::setApiVersion(double version)
+{
+    m_d->apiVersion = version;
+}
+
 bool TypeDatabase::supportedApiVersion(double version) const
 {
-    return version <= m_apiVersion;
+    return version <= m_d->apiVersion;
+}
+
+const QStringList& TypeDatabase::dropTypeEntries() const
+{
+    return m_d->dropTypeEntries;
+}
+
+bool TypeDatabase::hasDroppedTypeEntries() const
+{
+    return !m_d->dropTypeEntries.isEmpty();
 }
 
 bool TypeDatabase::shouldDropTypeEntry(const QString& fullTypeName) const
 {
-    return m_dropTypeEntries.contains(fullTypeName);
+    return m_d->dropTypeEntries.contains(fullTypeName);
 }
 
 void TypeDatabase::setDropTypeEntries(QStringList dropTypeEntries)
 {
-    m_dropTypeEntries = dropTypeEntries;
-    m_dropTypeEntries.sort();
+    m_d->dropTypeEntries = dropTypeEntries;
+    m_d->dropTypeEntries.sort();
 }
 
