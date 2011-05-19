@@ -820,7 +820,8 @@ public:
     // The type's name in TargetLang
     virtual QString targetLangName() const
     {
-        return m_name;
+        QString name = m_name;
+        return name.replace("::", ".");
     }
 
     // The type to lookup when converting to TargetLang
