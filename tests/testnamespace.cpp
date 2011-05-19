@@ -83,6 +83,31 @@ void TestNamespace::testNamespaceInnerClassMembers()
     QVERIFY(meth);
 }
 
+void TestNamespace::testNamespaceTargetLangName()
+{
+    const char* cppCode = "\
+    namespace Namespace\
+    {\
+        struct SomeClass {\
+        };\
+    };";
+    const char* xmlCode = "\
+    <typesystem package='Foo'> \
+        <namespace-type name='Namespace'>\
+            <value-type name='SomeClass' /> \
+        </namespace-type>\
+    </typesystem>";
+    TestUtil t(cppCode, xmlCode, false);
+    AbstractMetaClassList classes = t.builder()->classes();
+    AbstractMetaClass* ns = classes.findClass("Namespace");
+    QVERIFY(ns);
+    const AbstractMetaClass* metaClass = classes.findClass("Namespace::SomeClass");
+    QVERIFY(metaClass);
+    const TypeEntry* type = metaClass->typeEntry();
+    QVERIFY(type);
+    QCOMPARE(type->qualifiedTargetLangName(), QString("Foo.Namespace.SomeClass"));
+}
+
 QTEST_APPLESS_MAIN(TestNamespace)
 
 #include "testnamespace.moc"

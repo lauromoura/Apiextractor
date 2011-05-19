@@ -32,6 +32,7 @@ class TestNamespace : public QObject
     private slots:
         void testNamespaceMembers();
         void testNamespaceInnerClassMembers();
+        void testNamespaceTargetLangName();
 };
 
 #endif
