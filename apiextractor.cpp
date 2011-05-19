@@ -39,8 +39,19 @@ static bool preprocess(const QString& sourceFile,
                        QFile& targetFile,
                        const QStringList& includes);
 
-ApiExtractor::ApiExtractor() : m_builder(0)
+class ApiExtractor::ApiExtractorPrivate
 {
+public:
+    QString typeSystemFileName;
+    QString cppFileName;
+    QStringList includePaths;
+    AbstractMetaBuilder* builder;
+    QString logDirectory;
+};
+
+ApiExtractor::ApiExtractor() : m_d(new ApiExtractorPrivate)
+{
+    m_d->builder = 0;
     // Environment TYPESYSTEMPATH
     QString envTypesystemPaths = getenv("TYPESYSTEMPATH");
     if (!envTypesystemPaths.isEmpty())
@@ -50,7 +61,8 @@ ApiExtractor::ApiExtractor() : m_builder(0)
 
 ApiExtractor::~ApiExtractor()
 {
-    delete m_builder;
+    delete m_d->builder;
+    delete m_d;
 }
 
 void ApiExtractor::addTypesystemSearchPath (const QString& path)
@@ -66,27 +78,27 @@ void ApiExtractor::addTypesystemSearchPath(const QStringList& paths)
 
 void ApiExtractor::addIncludePath(const QString& path)
 {
-    m_includePaths << path;
+    m_d->includePaths << path;
 }
 
 void ApiExtractor::addIncludePath(const QStringList& paths)
 {
-    m_includePaths << paths;
+    m_d->includePaths << paths;
 }
 
 void ApiExtractor::setLogDirectory(const QString& logDir)
 {
-    m_logDirectory = logDir;
+    m_d->logDirectory = logDir;
 }
 
 void ApiExtractor::setCppFileName(const QString& cppFileName)
 {
-    m_cppFileName = cppFileName;
+    m_d->cppFileName = cppFileName;
 }
 
 void ApiExtractor::setTypeSystem(const QString& typeSystemFileName)
 {
-    m_typeSystemFileName = typeSystemFileName;
+    m_d->typeSystemFileName = typeSystemFileName;
 }
 
 void ApiExtractor::setDebugLevel(ReportHandler::DebugLevel debugLevel)
@@ -118,20 +130,20 @@ void ApiExtractor::setDropTypeEntries(QString dropEntries)
 
 AbstractMetaEnumList ApiExtractor::globalEnums() const
 {
-    Q_ASSERT(m_builder);
-    return m_builder->globalEnums();
+    Q_ASSERT(m_d->builder);
+    return m_d->builder->globalEnums();
 }
 
 AbstractMetaFunctionList ApiExtractor::globalFunctions() const
 {
-    Q_ASSERT(m_builder);
-    return m_builder->globalFunctions();
+    Q_ASSERT(m_d->builder);
+    return m_d->builder->globalFunctions();
 }
 
 AbstractMetaClassList ApiExtractor::classes() const
 {
-    Q_ASSERT(m_builder);
-    return m_builder->classes();
+    Q_ASSERT(m_d->builder);
+    return m_d->builder->classes();
 }
 
 PrimitiveTypeEntryList ApiExtractor::primitiveTypes() const
@@ -146,8 +158,8 @@ ContainerTypeEntryList ApiExtractor::containerTypes() const
 
 QSet<QString> ApiExtractor::qtMetaTypeDeclaredTypeNames() const
 {
-    Q_ASSERT(m_builder);
-    return m_builder->qtMetaTypeDeclaredTypeNames();
+    Q_ASSERT(m_d->builder);
+    return m_d->builder->qtMetaTypeDeclaredTypeNames();
 }
 
 static const AbstractMetaEnum* findEnumOnClasses(AbstractMetaClassList metaClasses, const EnumTypeEntry* typeEntry)
@@ -171,11 +183,11 @@ const AbstractMetaEnum* ApiExtractor::findAbstractMetaEnum(const EnumTypeEntry* 
 {
     if (!typeEntry)
         return 0;
-    foreach (AbstractMetaEnum* metaEnum, m_builder->globalEnums()) {
+    foreach (AbstractMetaEnum* metaEnum, m_d->builder->globalEnums()) {
         if (metaEnum->typeEntry() == typeEntry)
             return metaEnum;
     }
-    return findEnumOnClasses(m_builder->classes(), typeEntry);
+    return findEnumOnClasses(m_d->builder->classes(), typeEntry);
 }
 
 const AbstractMetaEnum* ApiExtractor::findAbstractMetaEnum(const TypeEntry* typeEntry) const
@@ -205,20 +217,20 @@ const AbstractMetaEnum* ApiExtractor::findAbstractMetaEnum(const AbstractMetaTyp
 
 int ApiExtractor::classCount() const
 {
-    Q_ASSERT(m_builder);
-    return m_builder->classes().count();
+    Q_ASSERT(m_d->builder);
+    return m_d->builder->classes().count();
 }
 
 bool ApiExtractor::run()
 {
-    if (m_builder)
+    if (m_d->builder)
         return false;
 
-    if (m_typeSystemFileName.isEmpty()) {
+    if (m_d->typeSystemFileName.isEmpty()) {
         std::cerr << "You must specify a Type System file." << std::endl;
         return false;
-    } else if (!TypeDatabase::instance()->parseFile(m_typeSystemFileName)) {
-        std::cerr << "Cannot parse file: " << qPrintable(m_typeSystemFileName);
+    } else if (!TypeDatabase::instance()->parseFile(m_d->typeSystemFileName)) {
+        std::cerr << "Cannot parse file: " << qPrintable(m_d->typeSystemFileName);
         return false;
     }
 
@@ -227,15 +239,15 @@ bool ApiExtractor::run()
     ppFile.setAutoRemove(false);
 #endif
     // run rpp pre-processor
-    if (!preprocess(m_cppFileName, ppFile, m_includePaths)) {
-        std::cerr << "Preprocessor failed on file: " << qPrintable(m_cppFileName);
+    if (!preprocess(m_d->cppFileName, ppFile, m_d->includePaths)) {
+        std::cerr << "Preprocessor failed on file: " << qPrintable(m_d->cppFileName);
         return false;
     }
     ppFile.seek(0);
-    m_builder = new AbstractMetaBuilder;
-    m_builder->setLogDirectory(m_logDirectory);
-    m_builder->setGlobalHeader(m_cppFileName);
-    m_builder->build(&ppFile);
+    m_d->builder = new AbstractMetaBuilder;
+    m_d->builder->setLogDirectory(m_d->logDirectory);
+    m_d->builder->setGlobalHeader(m_d->cppFileName);
+    m_d->builder->build(&ppFile);
 
     return true;
 }

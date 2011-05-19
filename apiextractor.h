@@ -67,11 +67,8 @@ public:
 
     bool run();
 private:
-    QString m_typeSystemFileName;
-    QString m_cppFileName;
-    QStringList m_includePaths;
-    AbstractMetaBuilder* m_builder;
-    QString m_logDirectory;
+    class ApiExtractorPrivate;
+    ApiExtractorPrivate* m_d;
 
     // disable copy
     ApiExtractor(const ApiExtractor&);
