@@ -326,7 +326,7 @@ public:
     QString name() const
     {
         if (m_name.isNull())
-            m_name = m_typeEntry->targetLangName().split("::").last();
+            m_name = m_typeEntry->targetLangName().split(".").last();
         return m_name;
     }
     QString fullName() const
