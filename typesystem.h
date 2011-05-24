@@ -168,24 +168,18 @@ public:
 class TemplateEntry : public CodeSnipAbstract
 {
 public:
-    TemplateEntry(const QString &name, double vr)
-            : m_name(name), m_version(vr)
+    TemplateEntry(const QString &name)
+            : m_name(name)
     {
-    };
+    }
 
     QString name() const
     {
         return m_name;
-    };
-
-    double version() const
-    {
-        return m_version;
     }
 
 private:
     QString m_name;
-    double m_version;
 };
 
 typedef QHash<QString, TemplateEntry *> TemplateEntryHash;
@@ -193,8 +187,8 @@ typedef QHash<QString, TemplateEntry *> TemplateEntryHash;
 class TemplateInstance
 {
 public:
-    TemplateInstance(const QString &name, double vr)
-            : m_name(name), m_version(vr) {}
+    TemplateInstance(const QString &name)
+            : m_name(name) {}
 
     void addReplaceRule(const QString &name, const QString &value)
     {
@@ -208,14 +202,8 @@ public:
         return m_name;
     }
 
-    double version() const
-    {
-        return m_version;
-    }
-
 private:
     const QString m_name;
-    double m_version;
     QHash<QString, QString> replaceRules;
 };
 
@@ -235,21 +223,20 @@ public:
         Any
     };
 
-    CodeSnip(double vr) : language(TypeSystem::TargetLangCode), version(vr) { }
-    CodeSnip(double vr, TypeSystem::Language lang) : language(lang), version(vr) { }
+    CodeSnip() : language(TypeSystem::TargetLangCode) { }
+    CodeSnip(TypeSystem::Language lang) : language(lang) { }
 
     TypeSystem::Language language;
     Position position;
     ArgumentMap argumentMap;
-    double version;
 };
 typedef QList<CodeSnip> CodeSnipList;
 
 struct ArgumentModification
 {
-    ArgumentModification(int idx, double vr)
+    ArgumentModification(int idx)
             : removedDefaultExpression(false), removed(false),
-              noNullPointers(false), index(idx), version(vr) {}
+              noNullPointers(false), index(idx) {}
 
     // Should the default expression be removed?
     uint removedDefaultExpression : 1;
@@ -285,9 +272,6 @@ struct ArgumentModification
 
     //QObject parent(owner) of this argument
     ArgumentOwner owner;
-
-    //Api version
-    double version;
 
     //New name
     QString renamed_to;
@@ -386,7 +370,7 @@ struct APIEXTRACTOR_API Modification
 
 struct APIEXTRACTOR_API FunctionModification: public Modification
 {
-    FunctionModification(double vr) : m_thread(false), m_allowThread(false), m_version(vr) {}
+    FunctionModification() : m_thread(false), m_allowThread(false) {}
 
     bool isCodeInjection() const
     {
@@ -408,10 +392,6 @@ struct APIEXTRACTOR_API FunctionModification: public Modification
     {
         m_allowThread = allow;
     }
-    double version() const
-    {
-        return m_version;
-    }
 
     bool operator!=(const FunctionModification& other) const;
     bool operator==(const FunctionModification& other) const;
@@ -426,13 +406,9 @@ struct APIEXTRACTOR_API FunctionModification: public Modification
     QList<ArgumentModification> argument_mods;
 
 private:
-    FunctionModification() {}
 
     bool m_thread;
     bool m_allowThread;
-    double m_version;
-
-
 };
 typedef QList<FunctionModification> FunctionModificationList;
 
@@ -482,7 +458,7 @@ struct APIEXTRACTOR_API AddedFunction
     };
 
     /// Creates a new AddedFunction with a signature and a return type.
-    AddedFunction(QString signature, QString returnType, double vr);
+    AddedFunction(QString signature, QString returnType);
 
     /// Returns the function name.
     QString name() const
@@ -532,10 +508,6 @@ struct APIEXTRACTOR_API AddedFunction
         return m_isStatic;
     }
 
-    double version() const
-    {
-        return m_version;
-    }
 private:
     QString m_name;
     Access m_access;
@@ -543,7 +515,6 @@ private:
     TypeInfo m_returnType;
     bool m_isConst;
     bool m_isStatic;
-    double m_version;
 };
 typedef QList<AddedFunction> AddedFunctionList;
 
@@ -571,11 +542,11 @@ public:
         XPathReplace
     };
 
-    DocModification(const QString& xpath, const QString& signature, double vr)
+    DocModification(const QString& xpath, const QString& signature)
             : format(TypeSystem::NativeCode), m_mode(XPathReplace),
-              m_xpath(xpath), m_signature(signature), m_version(vr) {}
-    DocModification(Mode mode, const QString& signature, double vr)
-            : m_mode(mode), m_signature(signature), m_version(vr) {}
+              m_xpath(xpath), m_signature(signature) {}
+    DocModification(Mode mode, const QString& signature)
+            : m_mode(mode), m_signature(signature) {}
 
     void setCode(const QString& code)
     {
@@ -597,10 +568,6 @@ public:
     {
         return m_mode;
     }
-    double version() const
-    {
-        return m_version;
-    }
 
     TypeSystem::Language format;
 
@@ -609,7 +576,6 @@ private:
     QString m_code;
     QString m_xpath;
     QString m_signature;
-    double m_version;
 };
 
 typedef QList<DocModification> DocModificationList;
@@ -652,13 +618,12 @@ public:
         GenerateCode            = GenerateTargetLang | GenerateCpp
     };
 
-    TypeEntry(const QString &name, Type t, double vr)
+    TypeEntry(const QString &name, Type t)
             : m_name(name),
               m_type(t),
               m_codeGeneration(GenerateAll),
               m_preferredConversion(true),
-              m_stream(false),
-              m_version(vr)
+              m_stream(false)
     {
     };
 
@@ -944,11 +909,6 @@ public:
         return !m_conversionRule.isEmpty();
     }
 
-    double version() const
-    {
-        return m_version;
-    }
-
     bool hasNativeConversionRule() const
     {
         return m_conversionRule.startsWith(NATIVE_CONVERSION_RULE_FLAG);
@@ -974,7 +934,6 @@ private:
     QHash<QString, bool> m_includesUsed;
     QString m_conversionRule;
     bool m_stream;
-    double m_version;
 };
 typedef QHash<QString, QList<TypeEntry *> > TypeEntryHash;
 typedef QHash<QString, TypeEntry *> SingleTypeEntryHash;
@@ -983,8 +942,8 @@ typedef QHash<QString, TypeEntry *> SingleTypeEntryHash;
 class APIEXTRACTOR_API TypeSystemTypeEntry : public TypeEntry
 {
 public:
-    TypeSystemTypeEntry(const QString &name, double vr)
-            : TypeEntry(name, TypeSystemType, vr)
+    TypeSystemTypeEntry(const QString &name)
+            : TypeEntry(name, TypeSystemType)
     {
     };
 };
@@ -992,20 +951,20 @@ public:
 class APIEXTRACTOR_API VoidTypeEntry : public TypeEntry
 {
 public:
-    VoidTypeEntry() : TypeEntry("void", VoidType, 0) { }
+    VoidTypeEntry() : TypeEntry("void", VoidType) { }
 };
 
 class APIEXTRACTOR_API VarargsTypeEntry : public TypeEntry
 {
 public:
-    VarargsTypeEntry() : TypeEntry("...", VarargsType, 0) { }
+    VarargsTypeEntry() : TypeEntry("...", VarargsType) { }
 };
 
 class APIEXTRACTOR_API TemplateArgumentEntry : public TypeEntry
 {
 public:
-    TemplateArgumentEntry(const QString &name, double vr)
-            : TypeEntry(name, TemplateArgumentType, vr), m_ordinal(0)
+    TemplateArgumentEntry(const QString &name)
+            : TypeEntry(name, TemplateArgumentType), m_ordinal(0)
     {
     }
 
@@ -1025,8 +984,8 @@ private:
 class APIEXTRACTOR_API ArrayTypeEntry : public TypeEntry
 {
 public:
-    ArrayTypeEntry(const TypeEntry *nested_type, double vr)
-            : TypeEntry("Array", ArrayType, vr), m_nestedType(nested_type)
+    ArrayTypeEntry(const TypeEntry *nested_type)
+            : TypeEntry("Array", ArrayType), m_nestedType(nested_type)
     {
         Q_ASSERT(m_nestedType);
     }
@@ -1060,8 +1019,8 @@ private:
 class APIEXTRACTOR_API PrimitiveTypeEntry : public TypeEntry
 {
 public:
-    PrimitiveTypeEntry(const QString &name, double vr)
-            : TypeEntry(name, PrimitiveType, vr),
+    PrimitiveTypeEntry(const QString &name)
+            : TypeEntry(name, PrimitiveType),
               m_preferredConversion(true),
               m_preferredTargetLangType(true),
               m_aliasedTypeEntry(0)
@@ -1167,9 +1126,9 @@ struct EnumValueRedirection
 class APIEXTRACTOR_API EnumTypeEntry : public TypeEntry
 {
 public:
-    EnumTypeEntry(const QString &nspace, const QString &enumName, double vr)
+    EnumTypeEntry(const QString &nspace, const QString &enumName)
             : TypeEntry(nspace.isEmpty() ? enumName : nspace + QLatin1String("::") + enumName,
-                        EnumType, vr),
+                        EnumType),
             m_flags(0),
             m_extensible(false)
     {
@@ -1318,8 +1277,8 @@ private:
 class APIEXTRACTOR_API EnumValueTypeEntry : public TypeEntry
 {
 public:
-    EnumValueTypeEntry(const QString& name, const QString& value, const EnumTypeEntry* enclosingEnum, double vr)
-        : TypeEntry(name, TypeEntry::EnumValue, vr), m_value(value), m_enclosingEnum(enclosingEnum)
+    EnumValueTypeEntry(const QString& name, const QString& value, const EnumTypeEntry* enclosingEnum)
+        : TypeEntry(name, TypeEntry::EnumValue), m_value(value), m_enclosingEnum(enclosingEnum)
     {
     }
 
@@ -1333,7 +1292,7 @@ private:
 class APIEXTRACTOR_API FlagsTypeEntry : public TypeEntry
 {
 public:
-    FlagsTypeEntry(const QString &name, double vr) : TypeEntry(name, FlagsType, vr), m_enum(0)
+    FlagsTypeEntry(const QString &name) : TypeEntry(name, FlagsType), m_enum(0)
     {
     }
 
@@ -1408,8 +1367,8 @@ public:
         Unknown
     };
 
-    ComplexTypeEntry(const QString &name, Type t, double vr)
-            : TypeEntry(QString(name).replace(".*::", ""), t, vr),
+    ComplexTypeEntry(const QString &name, Type t)
+            : TypeEntry(QString(name).replace(".*::", ""), t),
             m_qualifiedCppName(name),
             m_qobject(false),
             m_polymorphicBase(false),
@@ -1428,7 +1387,7 @@ public:
 
     ComplexTypeEntry *copy() const
     {
-        ComplexTypeEntry *centry = new ComplexTypeEntry(name(), type(), version());
+        ComplexTypeEntry *centry = new ComplexTypeEntry(name(), type());
         centry->setInclude(include());
         centry->setExtraIncludes(extraIncludes());
         centry->setAddedFunctions(addedFunctions());
@@ -1674,8 +1633,8 @@ public:
         PairContainer,
     };
 
-    ContainerTypeEntry(const QString &name, Type type, double vr)
-        : ComplexTypeEntry(name, ContainerType, vr), m_type(type)
+    ContainerTypeEntry(const QString &name, Type type)
+        : ComplexTypeEntry(name, ContainerType), m_type(type)
     {
         setCodeGeneration(GenerateForSubclass);
     }
@@ -1719,14 +1678,14 @@ typedef QList<const ContainerTypeEntry*> ContainerTypeEntryList;
 class APIEXTRACTOR_API NamespaceTypeEntry : public ComplexTypeEntry
 {
 public:
-    NamespaceTypeEntry(const QString &name, double vr) : ComplexTypeEntry(name, NamespaceType, vr) { }
+    NamespaceTypeEntry(const QString &name) : ComplexTypeEntry(name, NamespaceType) { }
 };
 
 
 class ValueTypeEntry : public ComplexTypeEntry
 {
 public:
-    ValueTypeEntry(const QString &name, double vr) : ComplexTypeEntry(name, BasicValueType, vr) { }
+    ValueTypeEntry(const QString &name) : ComplexTypeEntry(name, BasicValueType) { }
 
     bool isValue() const
     {
@@ -1739,15 +1698,15 @@ public:
     }
 
 protected:
-    ValueTypeEntry(const QString &name, Type t, double vr) : ComplexTypeEntry(name, t, vr) { }
+    ValueTypeEntry(const QString &name, Type t) : ComplexTypeEntry(name, t) { }
 };
 
 
 class StringTypeEntry : public ValueTypeEntry
 {
 public:
-    StringTypeEntry(const QString &name, double vr)
-            : ValueTypeEntry(name, StringType, vr)
+    StringTypeEntry(const QString &name)
+            : ValueTypeEntry(name, StringType)
     {
         setCodeGeneration(GenerateNothing);
     }
@@ -1765,7 +1724,7 @@ public:
 class CharTypeEntry : public ValueTypeEntry
 {
 public:
-    CharTypeEntry(const QString &name, double vr) : ValueTypeEntry(name, CharType, vr)
+    CharTypeEntry(const QString &name) : ValueTypeEntry(name, CharType)
     {
         setCodeGeneration(GenerateNothing);
     }
@@ -1786,7 +1745,7 @@ public:
 class VariantTypeEntry: public ValueTypeEntry
 {
 public:
-    VariantTypeEntry(const QString &name, double vr) : ValueTypeEntry(name, VariantType, vr) { }
+    VariantTypeEntry(const QString &name) : ValueTypeEntry(name, VariantType) { }
 
     QString targetLangApiName() const;
     QString targetLangName() const;
@@ -1802,8 +1761,8 @@ public:
 class APIEXTRACTOR_API InterfaceTypeEntry : public ComplexTypeEntry
 {
 public:
-    InterfaceTypeEntry(const QString &name, double vr)
-            : ComplexTypeEntry(name, InterfaceType, vr) {}
+    InterfaceTypeEntry(const QString &name)
+            : ComplexTypeEntry(name, InterfaceType) {}
 
     static QString interfaceName(const QString &name)
     {
@@ -1836,8 +1795,8 @@ private:
 class APIEXTRACTOR_API FunctionTypeEntry : public TypeEntry
 {
 public:
-    FunctionTypeEntry(const QString& name, const QString& signature, double vr)
-            : TypeEntry(name, FunctionType, vr)
+    FunctionTypeEntry(const QString& name, const QString& signature)
+            : TypeEntry(name, FunctionType)
     {
         addSignature(signature);
     }
@@ -1862,8 +1821,8 @@ private:
 class APIEXTRACTOR_API ObjectTypeEntry : public ComplexTypeEntry
 {
 public:
-    ObjectTypeEntry(const QString &name, double vr)
-            : ComplexTypeEntry(name, ObjectType, vr), m_interface(0) {}
+    ObjectTypeEntry(const QString &name)
+            : ComplexTypeEntry(name, ObjectType), m_interface(0) {}
 
     InterfaceTypeEntry *designatedInterface() const
     {

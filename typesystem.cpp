@@ -428,7 +428,6 @@ bool Handler::startElement(const QString &, const QString &n,
     if (element->type & StackElement::TypeEntryMask) {
         QHash<QString, QString> attributes;
         attributes["name"] = QString();
-        attributes["since"] = QString("0");
 
         switch (element->type) {
         case StackElement::PrimitiveTypeEntry:
@@ -483,7 +482,6 @@ bool Handler::startElement(const QString &, const QString &n,
 
         fetchAttributeValues(tagName, atts, &attributes);
         QString name = attributes["name"];
-        double since = attributes["since"].toDouble();
 
         if (m_database->hasDroppedTypeEntries()) {
             QString identifier = getNamePrefix(element) + '.';
@@ -508,7 +506,7 @@ bool Handler::startElement(const QString &, const QString &n,
                     m_error = "can not rename '" + signature + "', '" + rename + "' is not a valid function name";
                     return false;
                 }
-                FunctionModification mod(since);
+                FunctionModification mod;
                 mod.signature = signature;
                 mod.renamedToName = attributes["rename"];
                 mod.modifiers |= Modification::Rename;
@@ -559,7 +557,7 @@ bool Handler::startElement(const QString &, const QString &n,
             if (targetLangApiName.isEmpty())
                 targetLangApiName = name;
 
-            PrimitiveTypeEntry *type = new PrimitiveTypeEntry(name, since);
+            PrimitiveTypeEntry *type = new PrimitiveTypeEntry(name);
             type->setCodeGeneration(m_generate);
             type->setTargetLangName(targetLangName);
             type->setTargetLangApiName(targetLangApiName);
@@ -588,7 +586,7 @@ bool Handler::startElement(const QString &, const QString &n,
                     return false;
                 }
 
-                ContainerTypeEntry *type = new ContainerTypeEntry(name, containerType, since);
+                ContainerTypeEntry *type = new ContainerTypeEntry(name, containerType);
                 type->setCodeGeneration(m_generate);
                 element->entry = type;
             }
@@ -596,11 +594,11 @@ bool Handler::startElement(const QString &, const QString &n,
         case StackElement::EnumTypeEntry: {
             QStringList names = name.split(QLatin1String("::"));
             if (names.size() == 1)
-                m_currentEnum = new EnumTypeEntry(QString(), name, since);
+                m_currentEnum = new EnumTypeEntry(QString(), name);
              else
                 m_currentEnum =
                     new EnumTypeEntry(QStringList(names.mid(0, names.size() - 1)).join("::"),
-                                      names.last(), since);
+                                      names.last());
             m_currentEnum->setAnonymous(!attributes["identified-by-value"].isEmpty());
             element->entry = m_currentEnum;
             m_currentEnum->setCodeGeneration(m_generate);
@@ -613,7 +611,7 @@ bool Handler::startElement(const QString &, const QString &n,
             // put in the flags parallel...
             QString flagName = attributes["flags"];
             if (!flagName.isEmpty()) {
-                FlagsTypeEntry *ftype = new FlagsTypeEntry("QFlags<" + name + ">", since);
+                FlagsTypeEntry *ftype = new FlagsTypeEntry("QFlags<" + name + ">");
                 ftype->setOriginator(m_currentEnum);
                 // Try to get the guess the qualified flag name
                 if (!flagName.contains("::") && names.count() > 1) {
@@ -644,12 +642,12 @@ bool Handler::startElement(const QString &, const QString &n,
         break;
 
         case StackElement::InterfaceTypeEntry: {
-            ObjectTypeEntry *otype = new ObjectTypeEntry(name, since);
+            ObjectTypeEntry *otype = new ObjectTypeEntry(name);
             QString targetLangName = attributes["target-lang-name"];
             if (targetLangName.isEmpty())
                 targetLangName = name;
             InterfaceTypeEntry *itype =
-                new InterfaceTypeEntry(InterfaceTypeEntry::interfaceName(targetLangName), since);
+                new InterfaceTypeEntry(InterfaceTypeEntry::interfaceName(targetLangName));
 
             if (!convertBoolean(attributes["generate"], "generate", true))
                 itype->setCodeGeneration(TypeEntry::GenerateForSubclass);
@@ -662,17 +660,17 @@ bool Handler::startElement(const QString &, const QString &n,
         // fall through
         case StackElement::NamespaceTypeEntry:
             if (!element->entry)
-                element->entry = new NamespaceTypeEntry(name, since);
+                element->entry = new NamespaceTypeEntry(name);
 
             // fall through
         case StackElement::ObjectTypeEntry:
             if (!element->entry)
-                element->entry = new ObjectTypeEntry(name, since);
+                element->entry = new ObjectTypeEntry(name);
 
             // fall through
         case StackElement::ValueTypeEntry: {
             if (!element->entry)
-                element->entry = new ValueTypeEntry(name, since);
+                element->entry = new ValueTypeEntry(name);
 
             element->entry->setStream(attributes["stream"] == QString("yes"));
 
@@ -757,7 +755,7 @@ bool Handler::startElement(const QString &, const QString &n,
                     return false;
                 }
             } else {
-                element->entry = new FunctionTypeEntry(name, signature, since);
+                element->entry = new FunctionTypeEntry(name, signature);
                 element->entry->setCodeGeneration(m_generate);
             }
         }
@@ -776,10 +774,8 @@ bool Handler::startElement(const QString &, const QString &n,
         QHash<QString, QString> attributes;
         attributes["mode"] = "replace";
         attributes["format"] = "native";
-        attributes["since"] = QString("0");
 
         fetchAttributeValues(tagName, atts, &attributes);
-        double since = attributes["since"].toDouble();
 
         const int validParent = StackElement::TypeEntryMask
                                 | StackElement::ModifyFunction
@@ -812,7 +808,7 @@ bool Handler::startElement(const QString &, const QString &n,
             }
 
             QString signature = m_current->type & StackElement::TypeEntryMask ? QString() : m_currentSignature;
-            DocModification mod(mode, signature, since);
+            DocModification mod(mode, signature);
             mod.format = lang;
             m_contextStack.top()->docModifications << mod;
         } else {
@@ -824,16 +820,14 @@ bool Handler::startElement(const QString &, const QString &n,
         // check the XML tag attributes
         QHash<QString, QString> attributes;
         attributes["xpath"] = QString();
-        attributes["since"] = QString("0");
         fetchAttributeValues(tagName, atts, &attributes);
-        double since = attributes["since"].toDouble();
 
         const int validParent = StackElement::TypeEntryMask
                                 | StackElement::ModifyFunction
                                 | StackElement::ModifyField;
         if (m_current->parent && m_current->parent->type & validParent) {
             QString signature = (m_current->type & StackElement::TypeEntryMask) ? QString() : m_currentSignature;
-            m_contextStack.top()->docModifications << DocModification(attributes["xpath"], signature, since);
+            m_contextStack.top()->docModifications << DocModification(attributes["xpath"], signature);
         } else {
             m_error = "modify-documentation must be inside modify-function, "
                       "modify-field or other tags that creates a type";
@@ -859,7 +853,6 @@ bool Handler::startElement(const QString &, const QString &n,
         element->entry = topElement.entry;
 
         QHash<QString, QString> attributes;
-        attributes["since"] = QString("0");
         switch (element->type) {
         case StackElement::Root:
             attributes["package"] = QString();
@@ -977,11 +970,8 @@ bool Handler::startElement(const QString &, const QString &n,
             { };
         };
 
-        double since = 0;
-        if (attributes.count() > 0) {
+        if (attributes.count() > 0)
             fetchAttributeValues(tagName, atts, &attributes);
-            since = attributes["since"].toDouble();
-        }
 
         switch (element->type) {
         case StackElement::Root:
@@ -991,7 +981,7 @@ bool Handler::startElement(const QString &, const QString &n,
             {
                 TypeSystemTypeEntry* moduleEntry = reinterpret_cast<TypeSystemTypeEntry*>(
                         m_database->findType(m_defaultPackage));
-                element->entry = moduleEntry ? moduleEntry : new TypeSystemTypeEntry(m_defaultPackage, since);
+                element->entry = moduleEntry ? moduleEntry : new TypeSystemTypeEntry(m_defaultPackage);
             }
 
             if ((m_generate == TypeEntry::GenerateForSubclass ||
@@ -1061,7 +1051,7 @@ bool Handler::startElement(const QString &, const QString &n,
                     return false;
                 }
 
-                CodeSnip snip(since);
+                CodeSnip snip;
                 snip.language = lang;
                 m_contextStack.top()->functionMods.last().argument_mods.last().conversion_rules.append(snip);
             } else {
@@ -1129,7 +1119,7 @@ bool Handler::startElement(const QString &, const QString &n,
                 return false;
             }
 
-            ArgumentModification argumentModification = ArgumentModification(idx, since);
+            ArgumentModification argumentModification = ArgumentModification(idx);
             argumentModification.replace_value = replace_value;
             argumentModification.resetAfterUse = convertBoolean(attributes["invalidate-after-use"], "invalidate-after-use", false);
             m_contextStack.top()->functionMods.last().argument_mods.append(argumentModification);
@@ -1347,7 +1337,7 @@ bool Handler::startElement(const QString &, const QString &n,
                 return false;
             }
 
-            AddedFunction func(signature, attributes["return-type"], since);
+            AddedFunction func(signature, attributes["return-type"]);
             func.setStatic(attributes["static"] == "yes");
             if (!signature.contains("("))
                 signature += "()";
@@ -1367,7 +1357,7 @@ bool Handler::startElement(const QString &, const QString &n,
 
             m_contextStack.top()->addedFunctions << func;
 
-            FunctionModification mod(since);
+            FunctionModification mod;
             mod.signature = m_currentSignature;
             m_contextStack.top()->functionMods << mod;
         }
@@ -1386,7 +1376,7 @@ bool Handler::startElement(const QString &, const QString &n,
                 return false;
             }
 
-            FunctionModification mod(since);
+            FunctionModification mod;
             m_currentSignature = mod.signature = signature;
 
             QString access = attributes["access"].toLower();
@@ -1566,7 +1556,7 @@ bool Handler::startElement(const QString &, const QString &n,
                 return false;
             }
 
-            CodeSnip snip(since);
+            CodeSnip snip;
             snip.language = languageNames[className];
             snip.position = positionNames[position];
             bool in_file = false;
@@ -1668,7 +1658,7 @@ bool Handler::startElement(const QString &, const QString &n,
         }
         break;
         case StackElement::Template:
-            element->value.templateEntry = new TemplateEntry(attributes["name"], since);
+            element->value.templateEntry = new TemplateEntry(attributes["name"]);
             break;
         case StackElement::TemplateInstanceEnum:
             if (!(topElement.type & StackElement::CodeSnipMask) &&
@@ -1679,7 +1669,7 @@ bool Handler::startElement(const QString &, const QString &n,
                 m_error = "Can only insert templates into code snippets, templates, custom-constructors, custom-destructors or conversion-rule.";
                 return false;
             }
-            element->value.templateInstance = new TemplateInstance(attributes["name"], since);
+            element->value.templateInstance = new TemplateInstance(attributes["name"]);
             break;
         case StackElement::Replace:
             if (topElement.type != StackElement::TemplateInstanceEnum) {
@@ -1726,7 +1716,6 @@ QString Modification::accessModifierString() const
 FunctionModificationList ComplexTypeEntry::functionModifications(const QString &signature) const
 {
     FunctionModificationList lst;
-    TypeDatabase *td = TypeDatabase::instance();
     for (int i = 0; i < m_functionMods.count(); ++i) {
         const FunctionModification &mod = m_functionMods.at(i);
         if (mod.signature == signature)
@@ -1922,9 +1911,6 @@ bool FunctionModification::operator==(const FunctionModification& other) const
     if (m_allowThread != other.m_allowThread)
         return false;
 
-    if (m_version != other.m_version)
-        return false;
-
     return true;
 }
 
@@ -1995,7 +1981,7 @@ static AddedFunction::TypeInfo parseType(const QString& signature, int startPos 
     return result;
 }
 
-AddedFunction::AddedFunction(QString signature, QString returnType, double vr) : m_access(Public), m_version(vr)
+AddedFunction::AddedFunction(QString signature, QString returnType) : m_access(Public)
 {
     Q_ASSERT(!returnType.isEmpty());
     m_returnType = parseType(returnType);

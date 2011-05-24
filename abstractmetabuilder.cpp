@@ -905,7 +905,7 @@ AbstractMetaEnum* AbstractMetaBuilder::traverseEnum(EnumModelItem enumItem, Abst
         QString nspace;
         if (names.size() > 1)
             nspace = QStringList(names.mid(0, names.size() - 1)).join("::");
-        typeEntry = new EnumTypeEntry(nspace, enumName, 0);
+        typeEntry = new EnumTypeEntry(nspace, enumName);
         TypeDatabase::instance()->addType(typeEntry);
     } else if (!enumItem->isAnonymous()) {
         typeEntry = TypeDatabase::instance()->findType(qualifiedName);
@@ -989,7 +989,7 @@ AbstractMetaEnum* AbstractMetaBuilder::traverseEnum(EnumModelItem enumItem, Abst
             name += "::";
         }
         name += e->name();
-        EnumValueTypeEntry* enumValue = new EnumValueTypeEntry(name, e->value(), static_cast<EnumTypeEntry*>(typeEntry), typeEntry->version());
+        EnumValueTypeEntry* enumValue = new EnumValueTypeEntry(name, e->value(), static_cast<EnumTypeEntry*>(typeEntry));
         TypeDatabase::instance()->addType(enumValue);
     }
 
@@ -1105,7 +1105,7 @@ AbstractMetaClass* AbstractMetaBuilder::traverseClass(ClassModelItem classItem)
     template_args.clear();
     for (int i = 0; i < template_parameters.size(); ++i) {
         const TemplateParameterModelItem &param = template_parameters.at(i);
-        TemplateArgumentEntry *param_type = new TemplateArgumentEntry(param->name(), type->version());
+        TemplateArgumentEntry *param_type = new TemplateArgumentEntry(param->name());
         param_type->setOrdinal(i);
         template_args.append(param_type);
     }
@@ -1598,7 +1598,7 @@ AbstractMetaFunction* AbstractMetaBuilder::traverseFunction(const AddedFunction&
     metaFunction->setUserAdded(true);
     AbstractMetaAttributes::Attribute isStatic = addedFunc.isStatic() ? AbstractMetaFunction::Static : AbstractMetaFunction::None;
     metaFunction->setAttributes(metaFunction->attributes() | AbstractMetaAttributes::Final | isStatic);
-    metaFunction->setType(translateType(addedFunc.version(), addedFunc.returnType()));
+    metaFunction->setType(translateType(addedFunc.returnType()));
 
 
     QList<AddedFunction::TypeInfo> args = addedFunc.arguments();
@@ -1607,7 +1607,7 @@ AbstractMetaFunction* AbstractMetaBuilder::traverseFunction(const AddedFunction&
     for (int i = 0; i < args.count(); ++i) {
         AddedFunction::TypeInfo& typeInfo = args[i];
         AbstractMetaArgument* metaArg = createMetaArgument();
-        AbstractMetaType* type = translateType(addedFunc.version(), typeInfo);
+        AbstractMetaType* type = translateType(typeInfo);
         decideUsagePattern(type);
         metaArg->setType(type);
         metaArg->setArgumentIndex(i);
@@ -1877,7 +1877,7 @@ AbstractMetaFunction* AbstractMetaBuilder::traverseFunction(FunctionModelItem fu
     return metaFunction;
 }
 
-AbstractMetaType* AbstractMetaBuilder::translateType(double vr, const AddedFunction::TypeInfo& typeInfo)
+AbstractMetaType* AbstractMetaBuilder::translateType(const AddedFunction::TypeInfo& typeInfo)
 {
     Q_ASSERT(!typeInfo.name.isEmpty());
     TypeDatabase* typeDb = TypeDatabase::instance();
@@ -1905,7 +1905,7 @@ AbstractMetaType* AbstractMetaBuilder::translateType(double vr, const AddedFunct
     }
 
     if (!type) {
-        type = new TypeEntry(typeInfo.name, TypeEntry::CustomType, vr);
+        type = new TypeEntry(typeInfo.name, TypeEntry::CustomType);
         typeDb->addType(type);
     }
 
@@ -2011,7 +2011,7 @@ AbstractMetaType* AbstractMetaBuilder::translateType(const TypeInfo& _typei, boo
                 AbstractMetaType* arrayType = createMetaType();
                 arrayType->setArrayElementCount(elems);
                 arrayType->setArrayElementType(elementType);
-                arrayType->setTypeEntry(new ArrayTypeEntry(elementType->typeEntry() , elementType->typeEntry()->version()));
+                arrayType->setTypeEntry(new ArrayTypeEntry(elementType->typeEntry()));
                 decideUsagePattern(arrayType);
 
                 elementType = arrayType;

@@ -30,7 +30,7 @@ void TestAddFunction::testParsingFuncNameAndConstness()
 {
     // generic test...
     const char sig1[] = "func(type1, const type2, const type3* const)";
-    AddedFunction f1(sig1, "void", 0);
+    AddedFunction f1(sig1, "void");
     QCOMPARE(f1.name(), QString("func"));
     QCOMPARE(f1.arguments().count(), 3);
     AddedFunction::TypeInfo retval = f1.returnType();
@@ -41,7 +41,7 @@ void TestAddFunction::testParsingFuncNameAndConstness()
 
     // test with a ugly template as argument and other ugly stuff
     const char sig2[] = "    _fu__nc_       (  type1, const type2, const Abc<int& , C<char*> *   >  * *, const type3* const    )   const ";
-    AddedFunction f2(sig2, "const Abc<int& , C<char*> *   >  * *", 0);
+    AddedFunction f2(sig2, "const Abc<int& , C<char*> *   >  * *");
     QCOMPARE(f2.name(), QString("_fu__nc_"));
     QList< AddedFunction::TypeInfo > args = f2.arguments();
     QCOMPARE(args.count(), 4);
@@ -58,7 +58,7 @@ void TestAddFunction::testParsingFuncNameAndConstness()
 
     // function with no args.
     const char sig3[] = "func()";
-    AddedFunction f3(sig3, "void", 0);
+    AddedFunction f3(sig3, "void");
     QCOMPARE(f3.name(), QString("func"));
     QCOMPARE(f3.arguments().count(), 0);
 }
@@ -170,7 +170,7 @@ void TestAddFunction::testAddFunctionCodeSnippets()
 void TestAddFunction::testAddFunctionWithoutParenteses()
 {
     const char sig1[] = "func";
-    AddedFunction f1(sig1, "void", 0);
+    AddedFunction f1(sig1, "void");
 
     QCOMPARE(f1.name(), QString("func"));
     QCOMPARE(f1.arguments().count(), 0);
@@ -199,7 +199,7 @@ void TestAddFunction::testAddFunctionWithoutParenteses()
 void TestAddFunction::testAddFunctionWithDefaultArgs()
 {
     const char sig1[] = "func";
-    AddedFunction f1(sig1, "void", 0);
+    AddedFunction f1(sig1, "void");
 
     QCOMPARE(f1.name(), QString("func"));
     QCOMPARE(f1.arguments().count(), 0);
@@ -262,7 +262,7 @@ void TestAddFunction::testAddFunctionAtModuleLevel()
 void TestAddFunction::testAddFunctionWithVarargs()
 {
     const char sig1[] = "func(int,char,...)";
-    AddedFunction f1(sig1, "void", 0);
+    AddedFunction f1(sig1, "void");
 
     QCOMPARE(f1.name(), QString("func"));
     QCOMPARE(f1.arguments().count(), 3);
