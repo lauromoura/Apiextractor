@@ -50,14 +50,8 @@ public:
     AbstractMetaBuilder();
     virtual ~AbstractMetaBuilder();
 
-    AbstractMetaClassList classes() const
-    {
-        return m_metaClasses;
-    }
-    AbstractMetaClassList templates() const
-    {
-        return m_templates;
-    }
+    AbstractMetaClassList classes() const;
+    AbstractMetaClassList templates() const;
     /**
     *   Sorts a list of classes topologically, if an AbstractMetaClass object
     *   is passed the list of classes will be its inner classes, otherwise
@@ -66,30 +60,15 @@ public:
     */
     AbstractMetaClassList classesTopologicalSorted(const AbstractMetaClass* cppClass = 0) const;
 
-    FileModelItem model() const
-    {
-        return m_dom;
-    }
+    FileModelItem model() const;
 
-    void setModel(FileModelItem item)
-    {
-        m_dom = item;
-    }
+    void setModel(FileModelItem item);
 
-    ScopeModelItem popScope()
-    {
-        return m_scopes.takeLast();
-    }
+    ScopeModelItem popScope();
 
-    void pushScope(ScopeModelItem item)
-    {
-        m_scopes << item;
-    }
+    void pushScope(ScopeModelItem item);
 
-    ScopeModelItem currentScope() const
-    {
-        return m_scopes.last();
-    }
+    ScopeModelItem currentScope() const;
 
     void dumpLog();
 
@@ -154,15 +133,9 @@ public:
 
     void decideUsagePattern(AbstractMetaType *type);
 
-    const AbstractMetaFunctionList globalFunctions() const
-    {
-        return m_globalFunctions;
-    }
+    const AbstractMetaFunctionList globalFunctions() const;
 
-    const AbstractMetaEnumList globalEnums() const
-    {
-        return m_globalEnums;
-    }
+    const AbstractMetaEnumList globalEnums() const;
 
     AbstractMetaClassList getBaseClasses(const AbstractMetaClass* metaClass) const;
     bool ancestorHasPrivateCopyConstructor(const AbstractMetaClass* metaClass) const;
@@ -178,10 +151,7 @@ public:
     void fixQObjectForScope(TypeDatabase* types, NamespaceModelItem item);
 
     // QtScript
-    QSet<QString> qtMetaTypeDeclaredTypeNames() const
-    {
-        return m_qmetatypeDeclaredTypenames;
-    }
+    QSet<QString> qtMetaTypeDeclaredTypeNames() const;
 
     /**
     *   AbstractMetaBuilder should know what's the global header being used,
@@ -228,44 +198,9 @@ protected:
         return new AbstractMetaType();
     }
 
-    FileModelItem m_dom;
-
 private:
-    void sortLists();
-    AbstractMetaArgumentList reverseList(const AbstractMetaArgumentList& list);
-    void setInclude(TypeEntry* te, const QString& fileName) const;
-    void fixArgumentNames(AbstractMetaFunction* func);
-    void fillAddedFunctions(AbstractMetaClass* metaClass);
-
-    AbstractMetaClassList m_metaClasses;
-    AbstractMetaClassList m_templates;
-    AbstractMetaFunctionList m_globalFunctions;
-    AbstractMetaEnumList m_globalEnums;
-
-    QSet<const TypeEntry *> m_usedTypes;
-
-    QMap<QString, RejectReason> m_rejectedClasses;
-    QMap<QString, RejectReason> m_rejectedEnums;
-    QMap<QString, RejectReason> m_rejectedFunctions;
-    QMap<QString, RejectReason> m_rejectedFields;
-
-    QList<AbstractMetaEnum *> m_enums;
-
-    QList<QPair<AbstractMetaArgument *, AbstractMetaFunction *> > m_enumDefaultArguments;
-
-    QHash<QString, AbstractMetaEnumValue *> m_enumValues;
-
-    AbstractMetaClass *m_currentClass;
-    QList<ScopeModelItem> m_scopes;
-    QString m_namespacePrefix;
-
-    QSet<AbstractMetaClass *> m_setupInheritanceDone;
-
-    // QtScript
-    QSet<QString> m_qmetatypeDeclaredTypenames;
-
-    QString m_logDirectory;
-    QFileInfo m_globalHeader;
+    class AbstractMetaBuilderPrivate;
+    AbstractMetaBuilderPrivate* m_d;
 };
 
 #endif // ABSTRACTMETBUILDER_H
