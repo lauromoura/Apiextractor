@@ -48,7 +48,7 @@ public:
     void addIncludePath(const QString& path);
     void addIncludePath(const QStringList& paths);
     void setLogDirectory(const QString& logDir);
-    void setApiVersion(double version);
+    void setApiVersion(const QString& package, const QByteArray& version);
     void setDropTypeEntries(QString dropEntries);
 
     AbstractMetaEnumList globalEnums() const;

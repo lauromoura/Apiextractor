@@ -125,11 +125,9 @@ public:
     bool parseFile(const QString &filename, bool generate = true);
     bool parseFile(QIODevice* device, bool generate = true);
 
-    double apiVersion() const;
+    void setApiVersion(const QString& package, const QByteArray& version);
 
-    void setApiVersion(double version);
-
-    bool supportedApiVersion(double version) const;
+    bool checkApiVersion(const QString& package, const QByteArray& version) const;
 
     const QStringList& dropTypeEntries() const;
 
