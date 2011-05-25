@@ -1281,7 +1281,7 @@ public:
 
     QString name() const
     {
-        return m_typeEntry->targetLangName();
+        return m_typeEntry->targetLangName().split(".").last();
     }
 
     QString qualifier() const
