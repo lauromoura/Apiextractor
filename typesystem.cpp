@@ -516,9 +516,10 @@ bool Handler::startElement(const QString &, const QString &n,
         }
 
         // Fix type entry name using nesting information.
-        if (element->type & StackElement::TypeEntryMask
-            && element->parent && element->parent->type != StackElement::Root) {
-            name = element->parent->entry->name() + "::" + name;
+        StackElement *acc = element->parent;
+        while (acc && acc->type & StackElement::TypeEntryMask) {
+            name = acc->entry->name() + "::" + name;
+            acc = acc->parent;
         }
 
 
