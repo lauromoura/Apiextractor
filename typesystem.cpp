@@ -2117,3 +2117,31 @@ static void injectCode(ComplexTypeEntry *e,
 }
 */
 
+QString TypeEntry::targetLangName() const
+{
+    QString name;
+    name = m_name;
+
+    QString cpp;
+    QString target;
+    TypeDatabase* td = TypeDatabase::instance();
+    foreach (QString scope, name.split("::")) {
+        if (cpp.isEmpty())
+            cpp = scope;
+        else
+            cpp += "::" + scope;
+
+        TypeEntry* entry = td->findType(cpp);
+
+        if (entry && entry->generateCode()) {
+            if (target.isEmpty())
+                target = scope;
+            else
+                target = target + "." + scope;
+        }
+    }
+
+    name = target;
+
+    return name;
+}

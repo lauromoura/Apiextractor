@@ -772,10 +772,10 @@ public:
         m_stream = b;
     }
 
-    // The type's name in C++, fully qualified
+    // The type's name in C++, non qualified
     QString name() const
     {
-        return m_name;
+        return m_name.split("::").last();
     }
 
     uint codeGeneration() const
@@ -798,6 +798,7 @@ public:
                && m_codeGeneration != TypeEntry::GenerateNothing;
     }
 
+    // Name in C++, fully qualified
     virtual QString qualifiedCppName() const
     {
         return m_name;
@@ -818,11 +819,7 @@ public:
     }
 
     // The type's name in TargetLang
-    virtual QString targetLangName() const
-    {
-        QString name = m_name;
-        return name.replace("::", ".");
-    }
+    virtual QString targetLangName() const;
 
     // The type to lookup when converting to TargetLang
     virtual QString lookupName() const
@@ -839,9 +836,14 @@ public:
     virtual QString qualifiedTargetLangName() const
     {
         QString pkg = targetLangPackage();
+        QString target = targetLangName();
+
+        if (target.isEmpty())
+            return target;
+
         if (pkg.isEmpty())
-            return targetLangName();
-        return pkg + '.' + targetLangName();
+            return target;
+        return pkg + '.' + target;
     }
 
     virtual InterfaceTypeEntry *designatedInterface() const
@@ -1189,22 +1191,12 @@ public:
 
     QString targetLangName() const
     {
-        return m_targetLangName;
+        return TypeEntry::targetLangName();
     }
     QString targetLangQualifier() const;
     QString qualifiedTargetLangName() const
     {
-        QString qualifiedName;
-        QString pkg = targetLangPackage();
-        QString qualifier = targetLangQualifier();
-
-        if (!pkg.isEmpty())
-            qualifiedName += pkg + '.';
-        if (!qualifier.isEmpty())
-            qualifiedName += qualifier + '.';
-        qualifiedName += targetLangName();
-
-        return qualifiedName;
+        return TypeEntry::qualifiedTargetLangName();
     }
 
     QString targetLangApiName() const;
