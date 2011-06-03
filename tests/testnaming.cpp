@@ -81,6 +81,134 @@ void TestNaming::testClassInNamespace()
     QCOMPARE(type->qualifiedTargetLangName(), QString("Foo.Nsp"));
 }
 
+void TestNaming::testDeepClassNesting()
+{
+    const char* cppCode ="class A { class B { class C { class D {}; }; }; };";
+    const char* xmlCode = "<typesystem package=\"Foo\">\
+                                <value-type name=\"A\">\
+                                    <value-type name=\"B\">\
+                                        <value-type name=\"C\">\
+                                            <value-type name=\"D\"/>\
+                                        </value-type>\
+                                    </value-type>\
+                                </value-type>\
+                           </typesystem>";
+    TestUtil t(cppCode, xmlCode);
+    AbstractMetaClassList classes = t.builder()->classes();
+
+    // A
+    AbstractMetaClass* a = classes.findClass("A");
+    QVERIFY(a);
+    QCOMPARE(a->name(), QString("A"));
+
+    TypeEntry* type = a->typeEntry();
+    QVERIFY(type);
+    QCOMPARE(type->name(), QString("A"));
+    QCOMPARE(type->qualifiedCppName(), QString("A"));
+    QCOMPARE(type->targetLangName(), QString("A"));
+    QCOMPARE(type->qualifiedTargetLangName(), QString("Foo.A"));
+
+    // B
+    a = classes.findClass("B");
+    QVERIFY(a);
+    QCOMPARE(a->name(), QString("B"));
+
+    type = a->typeEntry();
+    QVERIFY(type);
+    QCOMPARE(type->name(), QString("B"));
+    QCOMPARE(type->qualifiedCppName(), QString("A::B"));
+    QCOMPARE(type->targetLangName(), QString("A.B"));
+    QCOMPARE(type->qualifiedTargetLangName(), QString("Foo.A.B"));
+
+    // C
+    a = classes.findClass("C");
+    QVERIFY(a);
+    QCOMPARE(a->name(), QString("C"));
+
+    type = a->typeEntry();
+    QVERIFY(type);
+    QCOMPARE(type->name(), QString("C"));
+    QCOMPARE(type->qualifiedCppName(), QString("A::B::C"));
+    QCOMPARE(type->targetLangName(), QString("A.B.C"));
+    QCOMPARE(type->qualifiedTargetLangName(), QString("Foo.A.B.C"));
+
+    // D
+    a = classes.findClass("D");
+    QVERIFY(a);
+    QCOMPARE(a->name(), QString("D"));
+
+    type = a->typeEntry();
+    QVERIFY(type);
+    QCOMPARE(type->name(), QString("D"));
+    QCOMPARE(type->qualifiedCppName(), QString("A::B::C::D"));
+    QCOMPARE(type->targetLangName(), QString("A.B.C.D"));
+    QCOMPARE(type->qualifiedTargetLangName(), QString("Foo.A.B.C.D"));
+}
+
+void TestNaming::testDeepClassNestingWithNamespace()
+{
+    const char* cppCode ="class A { class B { class C { class D {}; }; }; };";
+    const char* xmlCode = "<typesystem package=\"Foo\">\
+                                <value-type name=\"A\">\
+                                    <value-type name=\"B\">\
+                                        <value-type name=\"C\">\
+                                            <value-type name=\"D\"/>\
+                                        </value-type>\
+                                    </value-type>\
+                                </value-type>\
+                           </typesystem>";
+    TestUtil t(cppCode, xmlCode);
+    AbstractMetaClassList classes = t.builder()->classes();
+
+    // A
+    AbstractMetaClass* a = classes.findClass("A");
+    QVERIFY(a);
+    QCOMPARE(a->name(), QString("A"));
+
+    TypeEntry* type = a->typeEntry();
+    QVERIFY(type);
+    QCOMPARE(type->name(), QString("A"));
+    QCOMPARE(type->qualifiedCppName(), QString("A"));
+    QCOMPARE(type->targetLangName(), QString("A"));
+    QCOMPARE(type->qualifiedTargetLangName(), QString("Foo.A"));
+
+    // B
+    a = classes.findClass("B");
+    QVERIFY(a);
+    QCOMPARE(a->name(), QString("B"));
+
+    type = a->typeEntry();
+    QVERIFY(type);
+    QCOMPARE(type->name(), QString("B"));
+    QCOMPARE(type->qualifiedCppName(), QString("A::B"));
+    QCOMPARE(type->targetLangName(), QString("A.B"));
+    QCOMPARE(type->qualifiedTargetLangName(), QString("Foo.A.B"));
+
+    // C
+    a = classes.findClass("C");
+    QVERIFY(a);
+    QCOMPARE(a->name(), QString("C"));
+
+    type = a->typeEntry();
+    QVERIFY(type);
+    QCOMPARE(type->name(), QString("C"));
+    QCOMPARE(type->qualifiedCppName(), QString("A::B::C"));
+    QCOMPARE(type->targetLangName(), QString("A.B.C"));
+    QCOMPARE(type->qualifiedTargetLangName(), QString("Foo.A.B.C"));
+
+    // D
+    a = classes.findClass("D");
+    QVERIFY(a);
+    QCOMPARE(a->name(), QString("D"));
+
+    type = a->typeEntry();
+    QVERIFY(type);
+    QCOMPARE(type->name(), QString("D"));
+    QCOMPARE(type->qualifiedCppName(), QString("A::B::C::D"));
+    QCOMPARE(type->targetLangName(), QString("A.B.C.D"));
+    QCOMPARE(type->qualifiedTargetLangName(), QString("Foo.A.B.C.D"));
+}
+
 void TestNaming::testClassInHiddenNamespace()
 {
     const char* cppCode ="namespace Nsp { class ClassName {}; }";

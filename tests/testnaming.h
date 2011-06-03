@@ -35,6 +35,8 @@ private slots:
 
     void testClass();
     void testClassInNamespace();
+    void testDeepClassNesting();
+    void testDeepClassNestingWithNamespace();
     void testClassInHiddenNamespace();
 
     void testEnum();
